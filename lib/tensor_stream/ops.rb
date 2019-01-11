@@ -1,6 +1,8 @@
+require 'tensor_stream/generated_stub/ops'
 module TensorStream
   # Class that defines all available ops supported by TensorStream
   module Ops
+    include TensorStream::OpStub
     class OutputHolder
       def initialize(op)
         @op = op
@@ -418,15 +420,6 @@ module TensorStream
     # Return the elements, either from x or y, depending on the condition.
     def where(condition, true_t = nil, false_t = nil, name: nil)
       _op(:where, condition, true_t, false_t, name: name)
-    end
-
-    ##
-    # Returns x + y element-wise.
-    #
-    # This operation supports broadcasting
-    def add(input_a, input_b, name: nil)
-      input_a, input_b = check_data_types(input_a, input_b)
-      _op(:add, input_a, input_b, name: name)
     end
 
     ##
