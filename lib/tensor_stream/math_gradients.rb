@@ -58,14 +58,6 @@ module TensorStream
         case node.operation
         when :add_n
           return [grad] * node.inputs.size
-        when :add
-          return [grad, grad] if shapes_fully_specified_and_equal(x, y)
-          sx = ts.shape(x, name: "add/shape_x")
-          sy = ts.shape(y, name: "add/shape_y")
-          rx, ry = _broadcast_gradient_args(sx, sy)
-
-          [ts.reshape(ts.reduce_sum(grad, rx, name: "add/reduce_sum_x"), sx),
-           ts.reshape(ts.reduce_sum(grad, ry, name: "add/reduce_sum_y"), sy),]
         when :asin
           ts.control_dependencies([grad]) do
             x2 = ts.square(x)
@@ -91,29 +83,6 @@ module TensorStream
           end
         when :fill
           [nil, ts.reduce_sum(grad)]
-        when :sub
-          return [grad, -grad] if shapes_fully_specified_and_equal(x, y)
-
-          sx = ts.shape(x, name: "sub/shape_x")
-          sy = ts.shape(y, name: "sub/shape_y")
-          rx, ry = _broadcast_gradient_args(sx, sy)
-
-          [ts.reshape(ts.reduce_sum(grad, rx, name: "add/reduce_sub_x"), sx),
-           -ts.reshape(ts.reduce_sum(grad, ry, name: "add/reduce_sub_y"), sy),]
-        when :mul
-          sx = ts.shape(x)
-          sy = ts.shape(y)
-          rx, ry = _broadcast_gradient_args(sx, sy)
-
-          [ts.reshape(ts.reduce_sum(ts.mul(grad, y), rx), sx),
-           ts.reshape(ts.reduce_sum(ts.mul(x, grad), ry), sy),]
-        when :div
-          sx = i_op(:shape, x)
-          sy = i_op(:shape, y)
-          rx, ry = _broadcast_gradient_args(sx, sy)
-
-          [ts.reshape(ts.reduce_sum(ts.div(grad, y), rx), sx),
-           ts.reshape(ts.reduce_sum(grad * ts.div(ts.div(-x, y), y), ry), sy),]
         when :mod
           sx = ts.shape(x)
           sy = ts.shape(y)
@@ -167,50 +136,16 @@ module TensorStream
 
           [ts.reshape(ts.reduce_sum(x_grad, rx), sx),
            ts.reshape(-ts.reduce_sum(x_grad, ry), sy),]
-        when :mat_mul
-          t_a = node.options[:transpose_a]
-          t_b = node.options[:transpose_b]
-
-          if !t_a && !t_b
-            grad_a = ts.matmul(grad, y, transpose_b: true)
-            grad_b = ts.matmul(x, grad, transpose_a: true)
-          elsif !ta && tb
-            grad_a = ts.matmul(grad, y)
-            grad_b = ts.matmul(grad, x, transpose_a: true)
-          elsif t_a && !t_b
-            grad_a = ts.matmul(y, grad, transpose_b: true)
-            grad_b = ts.matmul(x, grad)
-          elsif t_a && t_b
-            grad_a = ts.matmul(y, grad, transpose_a: true, transpose_b: true)
-            grad_b = ts.matmul(grad, x, transpose_a: true, transpose_b: true)
-          end
-
-          [grad_a, grad_b]
         when :sin
           grad * ts.cos(x)
         when :tanh
           grad * i_op(:tanh_grad, x)
-        when :pow
-          z = node
-          sx = ts.shape(x)
-          sy = ts.shape(y)
-          rx, ry = _broadcast_gradient_args(sx, sy)
-          gx = ts.reduce_sum(grad * y * ts.pow(x, y - 1), rx)
-
-          log_x = ts.where(x > 0, ts.log(x), ts.zeros_like(x))
-          gy = ts.reduce_sum(grad * z * log_x, ry)
-
-          [gx, gy]
         when :abs
           grad * ts.sign(x)
         when :log
           grad * ts.reciprocal(x)
         when :cos
           -grad * ts.sin(x)
-        when :max
-          _min_or_max_grad(node.inputs, grad, ->(a, b) { ts.greater_equal(a, b) })
-        when :min
-          _min_or_max_grad(node.inputs, grad, ->(a, b) { ts.less_equal(a, b) })
         when :tan
           secx = ts.reciprocal(ts.cos(x))
           secx2 = ts.square(secx)
@@ -325,7 +260,7 @@ module TensorStream
 
           nil
         else
-          raise "no derivative op for #{node.operation}"
+          TensorStream::OpMaker.gradient_op(self, node, grad)
         end
       end
     end

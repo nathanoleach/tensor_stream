@@ -9,12 +9,197 @@ module TensorStream
     #
     # This operation supports broadcasting
     # Params:
+    # +input_a+:: tensor X    # +input_b+:: tensor Y
     #
-    # +input_a+:: tensor X
-    # +input_b+:: tensor Y
+    # Options:
+    # +:name+:: Optional name default(nil)
+
     def add(input_a, input_b, name: nil)
-      input_a, input_b = check_data_types(input_a, input_b)
+
+      input_a, input_b = apply_data_type_coercion(input_a, input_b)
+
       _op(:add, input_a, input_b, name: name)
     end
+
+    ##
+    # Returns x / y element-wise.
+    #
+    # This operation supports broadcasting
+    # Params:
+    # +input_a+:: tensor X    # +input_b+:: tensor Y
+    #
+    # Options:
+    # +:name+:: Optional name default(nil)
+
+    def div(input_a, input_b, name: nil)
+
+      input_a, input_b = apply_data_type_coercion(input_a, input_b)
+
+      _op(:div, input_a, input_b, name: name)
+    end
+
+    ##
+    # Returns the truth value of (x > y) element-wise.
+    #
+    # This operation supports broadcasting
+    # Params:
+    # +input_a+:: tensor X    # +input_b+:: tensor Y
+    #
+    # Options:
+    # +:name+:: Optional name default(nil)
+
+    def greater(input_a, input_b, name: nil)
+
+      input_a, input_b = apply_data_type_coercion(input_a, input_b)
+
+      _op(:greater, input_a, input_b, name: name)
+    end
+
+    ##
+    # Returns the truth value of (x >= y) element-wise.
+    #
+    # This operation supports broadcasting
+    # Params:
+    # +input_a+:: tensor X    # +input_b+:: tensor Y
+    #
+    # Options:
+    # +:name+:: Optional name default(nil)
+
+    def greater_equal(input_a, input_b, name: nil)
+
+      input_a, input_b = apply_data_type_coercion(input_a, input_b)
+
+      _op(:greater_equal, input_a, input_b, name: name)
+    end
+
+    ##
+    # Returns the truth value of (x <= y) element-wise.
+    #
+    # This operation supports broadcasting
+    # Params:
+    # +input_a+:: tensor X    # +input_b+:: tensor Y
+    #
+    # Options:
+    # +:name+:: Optional name default(nil)
+
+    def less_equal(input_a, input_b, name: nil)
+
+      input_a, input_b = apply_data_type_coercion(input_a, input_b)
+
+      _op(:less_equal, input_a, input_b, name: name)
+    end
+
+    ##
+    # Multiplies matrix a by matrix b, producing a * b. The inputs must, following any transpositions, be tensors of rank 2 .
+    #
+    # This operation supports broadcasting
+    # Params:
+    # +input_a+:: tensor X    # +input_b+:: tensor Y
+    #
+    # Options:
+    # +:transpose_a+:: Transpose matrix A first default(false)
+    # +:transpose_b+:: Transpose matrix B first default(false)
+    # +:name+:: Optional name default(nil)
+
+    def mat_mul(input_a, input_b, transpose_a: false, transpose_b: false, name: nil)
+
+      input_a, input_b = apply_data_type_coercion(input_a, input_b)
+
+      _op(:mat_mul, input_a, input_b, transpose_a: transpose_a, transpose_b: transpose_b, name: name)
+    end
+
+    ##
+    # Returns the max of x and y (i.e. x > y ? x : y) element-wise.
+    #
+    # This operation supports broadcasting
+    # Params:
+    # +input_a+:: tensor X    # +input_b+:: tensor Y
+    #
+    # Options:
+    # +:name+:: Optional name default(nil)
+
+    def max(input_a, input_b, name: nil)
+
+      check_allowed_types(input_a, TensorStream::Ops::NUMERIC_TYPES)
+
+      check_allowed_types(input_b, TensorStream::Ops::NUMERIC_TYPES)
+
+      input_a, input_b = apply_data_type_coercion(input_a, input_b)
+
+      _op(:max, input_a, input_b, name: name)
+    end
+
+    ##
+    # Returns the min of x and y (i.e. x < y ? x : y) element-wise.
+    #
+    # This operation supports broadcasting
+    # Params:
+    # +input_a+:: tensor X    # +input_b+:: tensor Y
+    #
+    # Options:
+    # +:name+:: Optional name default(nil)
+
+    def min(input_a, input_b, name: nil)
+
+      check_allowed_types(input_a, TensorStream::Ops::NUMERIC_TYPES)
+
+      check_allowed_types(input_b, TensorStream::Ops::NUMERIC_TYPES)
+
+      input_a, input_b = apply_data_type_coercion(input_a, input_b)
+
+      _op(:min, input_a, input_b, name: name)
+    end
+
+    ##
+    # Returns x * y element-wise.
+    #
+    # This operation supports broadcasting
+    # Params:
+    # +input_a+:: tensor X    # +input_b+:: tensor Y
+    #
+    # Options:
+    # +:name+:: Optional name default(nil)
+
+    def mul(input_a, input_b, name: nil)
+
+      input_a, input_b = apply_data_type_coercion(input_a, input_b)
+
+      _op(:mul, input_a, input_b, name: name)
+    end
+
+    ##
+    # Computes the power of one value to another X^Y element wise
+    #
+    # This operation supports broadcasting
+    # Params:
+    # +input_a+:: tensor X    # +input_b+:: tensor Y
+    #
+    # Options:
+    # +:name+:: Optional name default(nil)
+
+    def pow(input_a, input_b, name: nil)
+
+      input_a, input_b = apply_data_type_coercion(input_a, input_b)
+
+      _op(:pow, input_a, input_b, name: name)
+    end
+
+    ##
+    # Returns x - y element-wise.
+    #
+    # This operation supports broadcasting
+    # Params:
+    # +input_a+:: tensor X    # +input_b+:: tensor Y
+    #
+    # Options:
+    # +:name+:: Optional name default(nil)
+
+    def sub(input_a, input_b, name: nil)
+
+      input_a, input_b = apply_data_type_coercion(input_a, input_b)
+
+      _op(:sub, input_a, input_b, name: name)
+    end
+
   end
 end

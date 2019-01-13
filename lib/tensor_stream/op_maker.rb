@@ -1,7 +1,7 @@
 class TensorStream::OpMaker
   attr_reader :operation, :description, :parameters,
               :options, :gradient, :check_types,
-              :supports_broadcast
+              :supports_broadcast, :data_type_coercion
 
   def initialize(op)
     @operation = op
@@ -9,6 +9,7 @@ class TensorStream::OpMaker
     @options = {}
     @gradient = nil
     @supports_broadcast = false
+    @data_type_coercion = false
   end
 
   def self.scan
@@ -25,8 +26,15 @@ class TensorStream::OpMaker
     @ops[op_code.to_sym] = op_maker
   end
 
+  # call an operations' gradient definition
+  def self.gradient_op(context_caller, node, grad)
+    raise "No derivative op defined for #{node.operation}" if @ops[node.operation].nil? || @ops[node.operation].gradient.nil?
+
+    context_caller.instance_exec(grad, node, node.inputs, &@ops[node.operation].gradient)
+  end
+
   def self.each_op(&block)
-    @ops.values.each do |op|
+    @ops.values.sort_by { |op| op.operation }.each do |op|
       block.call(op)
     end
   end
@@ -35,8 +43,16 @@ class TensorStream::OpMaker
     @description = description
   end
 
-  def parameter(name, description, default_value = nil)
-    @parameters << { name: name.to_s, description: description, default_value: default_value }
+  ##
+  # adds a parameter to the op
+  #
+  def parameter(name, description, default_value = nil, validate: nil)
+    @parameters << {
+      name: name.to_s,
+      description: description,
+      default_value: default_value,
+      validate: validate
+    }
   end
 
   def option(name, description, default_value = nil)
@@ -57,12 +73,24 @@ class TensorStream::OpMaker
     @check_types = true
   end
 
+  def apply_data_type_coercion!
+    @data_type_coercion = true
+  end
+
   def supports_broadcasting!
-    @supports_broadcast = true
+    if (@parameters.size> 1)
+      @supports_broadcast = true
+    else
+      raise "Ops with parameters < 2 cannot support broadcasting"
+    end
   end
 
   def supports_broadcasting?
     @supports_broadcast
+  end
+
+  def data_type_coercion?
+    @data_type_coercion
   end
 
   def check_types?

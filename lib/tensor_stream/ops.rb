@@ -1,8 +1,15 @@
-require 'tensor_stream/generated_stub/ops'
+
 module TensorStream
   # Class that defines all available ops supported by TensorStream
   module Ops
-    include TensorStream::OpStub
+    if File.exists?(File.join(__dir__, 'generated_stub', 'ops.rb'))
+      require 'tensor_stream/generated_stub/ops'
+      include TensorStream::OpStub
+    end
+
+    alias_method :matmul, :mat_mul
+    alias_method :subtract, :sub
+
     class OutputHolder
       def initialize(op)
         @op = op
@@ -241,39 +248,15 @@ module TensorStream
     # Returns the truth value of (x < y) element-wise.
     # This operation supports broadcasting
     def less(input_a, input_b, name: nil)
-      input_a, input_b = check_data_types(input_a, input_b)
+      check_data_types(input_a, input_b)
       _op(:less, input_a, input_b, name: name)
     end
 
     ##
     # Returns the truth value of x AND y element-wise.
     def logical_and(input_a, input_b, name: nil)
-      input_a, input_b = check_data_types(input_a, input_b)
+      check_data_types(input_a, input_b)
       _op(:logical_and, input_a, input_b, name: name)
-    end
-
-    ##
-    # Returns the truth value of (x > y) element-wise.
-    # This operation supports broadcasting
-    def greater(input_a, input_b, name: nil)
-      input_a, input_b = check_data_types(input_a, input_b)
-      _op(:greater, input_a, input_b, name: name)
-    end
-
-    ##
-    # Returns the truth value of (x >= y) element-wise.
-    #
-    # This operation supports broadcasting
-    def greater_equal(input_a, input_b, name: nil)
-      input_a, input_b = check_data_types(input_a, input_b)
-      _op(:greater_equal, input_a, input_b, name: name)
-    end
-
-    ##
-    # Returns the truth value of (x <= y) element-wise.
-    def less_equal(input_a, input_b, name: nil)
-      input_a, input_b = check_data_types(input_a, input_b)
-      _op(:less_equal, input_a, input_b, name: name)
     end
 
     ##
@@ -452,28 +435,16 @@ module TensorStream
     end
 
     ##
-    # Returns x - y element-wise.
-    #
-    # This operation supports boradcasting
-    def sub(input_a, input_b, name: nil)
-      input_a, input_b = check_data_types(input_a, input_b)
-      _op(:sub, input_a, input_b, name: name)
-    end
-
-    ##
     # Returns element-wise remainder of division.
     def mod(input_a, input_b, name: nil)
-      input_a = convert_to_tensor(input_a)
-      input_b = convert_to_tensor(input_b)
-
-      input_a, input_b = check_data_types(input_a, input_b)
+      check_data_types(input_a, input_b)
       _op(:mod, input_a, input_b, name: name)
     end
 
     ##
     # Returns element-wise integer divistion.
     def floor_div(input_a, input_b, name: nil)
-      input_a, input_b = check_data_types(input_a, input_b)
+      check_data_types(input_a, input_b)
       _op(:floor_div, input_a, input_b, name: name)
     end
 
@@ -482,37 +453,9 @@ module TensorStream
     end
 
     ##
-    # Returns x - y element-wise.
-    #
-    # This operation supports boradcasting
-    def subtract(input_a, input_b, name: nil)
-      input_a, input_b = check_data_types(input_a, input_b)
-      sub(input_a, input_b, name: name)
-    end
-
-    ##
-    # Returns the max of x and y (i.e. x > y ? x : y) element-wise.
-    def max(input_a, input_b, name: nil)
-      check_allowed_types(input_a, NUMERIC_TYPES)
-      check_allowed_types(input_b, NUMERIC_TYPES)
-
-      input_a, input_b = check_data_types(input_a, input_b)
-      _op(:max, input_a, input_b, name: name)
-    end
-
-    ##
     # Returns the max of x and y (i.e. x > y ? x : y) element-wise.
     def maximum(input_a, input_b, name: nil)
       max(input_a, input_b, name: name)
-    end
-
-    ##
-    # Returns the min of x and y (i.e. x < y ? x : y) element-wise.
-    def min(input_a, input_b, name: nil)
-      check_allowed_types(input_a, NUMERIC_TYPES)
-      check_allowed_types(input_b, NUMERIC_TYPES)
-      input_a, input_b = check_data_types(input_a, input_b)
-      _op(:min, input_a, input_b, name: name)
     end
 
     ##
@@ -553,7 +496,7 @@ module TensorStream
     ##
     # Returns the truth value of (x == y) element-wise.
     def equal(input_a, input_b, name: nil)
-      input_a, input_b = check_data_types(input_a, input_b)
+      check_data_types(input_a, input_b)
       _op(:equal, input_a, input_b, name: name)
     end
 
@@ -561,7 +504,7 @@ module TensorStream
     # Returns the truth value of (x != y) element-wise.
     # This ops supports broadcasting
     def not_equal(input_a, input_b, name: nil)
-      input_a, input_b = check_data_types(input_a, input_b)
+      check_data_types(input_a, input_b)
       _op(:not_equal, input_a, input_b, name: name)
     end
 
@@ -593,31 +536,8 @@ module TensorStream
     # Returns x * y element-wise.
     # This operation supports broadcasting
     def multiply(input_a, input_b, name: nil)
-      input_a, input_b = check_data_types(input_a, input_b)
+      check_data_types(input_a, input_b)
       _op(:mul, input_a, input_b, name: name)
-    end
-
-    ##
-    # Returns x * y element-wise.
-    # This operation supports broadcasting
-    def mul(input_a, input_b, name: nil)
-      input_a, input_b = check_data_types(input_a, input_b)
-      _op(:mul, input_a, input_b, name: name)
-    end
-
-    ##
-    # Divides x / y elementwise
-    # This operation supports broadcasting
-    def div(input_a, input_b, name: nil)
-      input_a, input_b = check_data_types(input_a, input_b)
-      _op(:div, input_a, input_b, name: name)
-    end
-
-    ##
-    # Computes the power of one value to another.
-    def pow(input_a, input_e, name: nil)
-      input_a, input_e = check_data_types(input_a, input_e)
-      _op(:pow, input_a, input_e, name: name)
     end
 
     ##
@@ -715,16 +635,6 @@ module TensorStream
     def sigmoid(input, name: nil)
       check_allowed_types(input, FLOATING_POINT_TYPES)
       _op(:sigmoid, input, name: name)
-    end
-
-    ##
-    # Multiplies matrix a by matrix b, producing a * b.
-    # The inputs must, following any transpositions, be tensors of rank 2 .
-    def matmul(input_a, input_b, transpose_a: false,
-      transpose_b: false,
-      name: nil)
-      input_a, input_b = check_data_types(input_a, input_b)
-      _op(:mat_mul, input_a, input_b, transpose_a: transpose_a, transpose_b: transpose_b, name: name)
     end
 
     ##
