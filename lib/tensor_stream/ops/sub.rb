@@ -1,4 +1,5 @@
 TensorStream::OpMaker.define_operation :sub do |op|
+  op.other_names %w(subtract)
   op.what_it_does "Returns x - y element-wise."
 
   op.parameter :input_a, "tensor X"

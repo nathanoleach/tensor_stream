@@ -1,4 +1,5 @@
 TensorStream::OpMaker.define_operation :mat_mul do |op|
+  op.other_names %w(matmul)
   op.what_it_does "Multiplies matrix a by matrix b, producing a * b. The inputs must, following any transpositions, be tensors of rank 2 ."
 
   op.parameter :input_a, "tensor X"

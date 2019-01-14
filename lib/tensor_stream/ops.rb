@@ -7,9 +7,6 @@ module TensorStream
       include TensorStream::OpStub
     end
 
-    alias_method :matmul, :mat_mul
-    alias_method :subtract, :sub
-
     class OutputHolder
       def initialize(op)
         @op = op
@@ -18,30 +15,6 @@ module TensorStream
     FLOATING_POINT_TYPES = %i[float32 float64 float float16].freeze
     INTEGER_TYPES = %i[uint8 int32 int int16 uint16 int64 uint32 uint64].freeze
     NUMERIC_TYPES = FLOATING_POINT_TYPES + INTEGER_TYPES
-
-    ##
-    # Returns the index with the largest value across axes of a tensor.
-    #
-    # Argmuments
-    #
-    # +input+ A Tensor. Must be one of the following types: float32, float64, int32, int16
-    # +axis+  Describes which axis of the input Tensor to reduce across. For vectors, use axis = 0
-    # +output_type+ Output data type defaults to int32
-    def argmax(input, axis = nil, name: nil, dimension: nil, output_type: :int32)
-      _op(:argmax, input, axis, name: name, dimension: dimension, data_type: output_type)
-    end
-
-    ##
-    # Returns the index with the smallest value across axes of a tensor.
-    #
-    # Argmuments
-    #
-    # +input+ A Tensor. Must be one of the following types: float32, float64, int32, int16
-    # +axis+  Describes which axis of the input Tensor to reduce across. For vectors, use axis = 0
-    # +output_type+ Output data type defaults to int32
-    def argmin(input, axis = nil, name: nil, dimension: nil, output_type: :int32)
-      _op(:argmin, input, axis, name: name, dimension: dimension, data_type: output_type)
-    end
 
     ##
     # Assert the condition x == y holds element-wise.
@@ -277,29 +250,12 @@ module TensorStream
       reduce(:sum, input_tensor, axis, keepdims: keepdims, name: name)
     end
 
-    ##
-    # Computes the product of elements across dimensions of a tensor.
-    #
-    # Reduces input_tensor along the dimensions given in axis. Unless keepdims is true, the rank of the
-    # tensor is reduced by 1 for each entry in axis. If keepdims is true, the reduced dimensions are
-    # retained with length 1.
-    #
-    # If axis has no entries, all dimensions are reduced, and a tensor with a single element is returned.
-    def reduce_prod(input, axis = nil, keepdims: false, name: nil)
-      reduce(:prod, input, axis, keepdims: keepdims, name: name)
-    end
 
     def reduce(op, input, axis = nil, keepdims: false, name: nil)
       input = TensorStream.convert_to_tensor(input)
-      axis = if !axis.nil?
-        axis
-      elsif input.shape.scalar?
-        op
-      elsif input.shape.known?
-        (0...input.shape.ndims).to_a
-      else
-        range(0, rank(input))
-      end
+      return input if input.shape.scalar?
+
+      axis = cast_axis(input, axis)
 
       _op(op, input, axis, keepdims: keepdims, name: name)
     end
@@ -547,42 +503,6 @@ module TensorStream
     end
 
     ##
-    # Returns an element-wise indication of the sign of a number.
-    # y = sign(x) = -1 if x < 0; 0 if x == 0 or tf.is_nan(x); 1 if x > 0.
-    # Zero is returned for NaN inputs.
-    def sign(input, name: nil)
-      _op(:sign, input, name: name)
-    end
-
-    ##
-    # Computes sin of input element-wise.
-    def sin(input, name: nil)
-      check_allowed_types(input, FLOATING_POINT_TYPES)
-      _op(:sin, input, name: name)
-    end
-
-    ##
-    # Computes cos of input element-wise.
-    def cos(input, name: nil)
-      check_allowed_types(input, FLOATING_POINT_TYPES)
-      _op(:cos, input, name: name)
-    end
-
-    ##
-    # Computes tan of input element-wise.
-    def tan(input, name: nil)
-      check_allowed_types(input, FLOATING_POINT_TYPES)
-      _op(:tan, input, name: name)
-    end
-
-    ##
-    # Computes tanh of input element-wise.
-    def tanh(input, name: nil)
-      check_allowed_types(input, FLOATING_POINT_TYPES)
-      _op(:tanh, input, name: name)
-    end
-
-    ##
     # Computes sec of input element-wise.
     def sec(input, name: nil)
       check_allowed_types(input, FLOATING_POINT_TYPES)
@@ -780,6 +700,16 @@ module TensorStream
 
     def invert_permutation(x, name: nil)
       _op(:invert_permutation, x, name: name)
+    end
+
+    def cast_axis(input, axis)
+      if !axis.nil?
+        axis
+      elsif input.shape.known?
+        (0...input.shape.ndims).to_a
+      else
+        range(0, rank(input))
+      end
     end
   end
 end

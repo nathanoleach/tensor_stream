@@ -1,7 +1,8 @@
 class TensorStream::OpMaker
   attr_reader :operation, :description, :parameters,
               :options, :gradient, :check_types,
-              :supports_broadcast, :data_type_coercion
+              :supports_broadcast, :data_type_coercion,
+              :aliases, :custom
 
   def initialize(op)
     @operation = op
@@ -10,6 +11,17 @@ class TensorStream::OpMaker
     @gradient = nil
     @supports_broadcast = false
     @data_type_coercion = false
+    @description = []
+    @aliases = []
+    @custom = []
+  end
+
+  def other_names(aliases)
+    @aliases += aliases
+  end
+
+  def add_custom(custom_code)
+    @custom << custom_code
   end
 
   def self.scan
@@ -40,7 +52,11 @@ class TensorStream::OpMaker
   end
 
   def what_it_does(description)
-    @description = description
+    @description << description
+  end
+
+  def what_it_does_code(description)
+    @description << "<tt>#{description}</tt>"
   end
 
   ##

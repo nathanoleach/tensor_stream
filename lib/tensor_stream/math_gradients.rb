@@ -92,41 +92,6 @@ module TensorStream
           gy = ts.reshape(ts.reduce_sum(grad * ts.negative(floor_xy), ry), sy)
 
           [gx, gy]
-        when :prod
-          input_shape = ts.shape(x)
-          y = ts.range(0, ts.rank(x)) if y.nil?
-          reduction_indices = ts.reshape(y, [-1])
-
-          output_shape_kept_dims = ts.reduced_shape(input_shape, y)
-          tile_scaling = _safe_shape_div(input_shape, output_shape_kept_dims)
-          grad = ts.reshape(grad, output_shape_kept_dims)
-          grad = ts.tile(grad, tile_scaling)
-
-          perm, reduced_num, other_num = ts.device("/cpu:0") {
-            rank = ts.rank(x)
-            reduction_indices = (reduction_indices + rank) % rank
-            reduced = ts.cast(reduction_indices, :int32)
-            idx = ts.range(0, rank)
-            other, = ts.setdiff1d(idx, reduced)
-            [ts.concat([reduced, other], 0),
-             ts.reduce_prod(ts.gather(input_shape, reduced)),
-             ts.reduce_prod(ts.gather(input_shape, other)),]
-          }
-
-          permuted = ts.transpose(x, perm)
-          permuted_shape = ts.shape(permuted)
-
-          reshaped = ts.reshape(permuted, [reduced_num, other_num])
-
-          # Calculate product, leaving out the current entry
-          left = ts.cumprod(reshaped, axis: 0, exclusive: true)
-          right = ts.cumprod(reshaped, axis: 0, exclusive: true, reverse: true)
-          y = ts.reshape(left * right, permuted_shape)
-
-          # Invert the transpose and reshape operations.
-          # Make sure to set the statically known shape information through a reshape.
-          out = grad * ts.transpose(y, ts.invert_permutation(perm))
-          [ts.reshape(out, input_shape, name: "prod"), nil]
         when :squared_difference
           sx = i_op(:shape, x)
           sy = i_op(:shape, y)
@@ -136,28 +101,16 @@ module TensorStream
 
           [ts.reshape(ts.reduce_sum(x_grad, rx), sx),
            ts.reshape(-ts.reduce_sum(x_grad, ry), sy),]
-        when :sin
-          grad * ts.cos(x)
-        when :tanh
-          grad * i_op(:tanh_grad, x)
         when :abs
           grad * ts.sign(x)
         when :log
           grad * ts.reciprocal(x)
-        when :cos
-          -grad * ts.sin(x)
-        when :tan
-          secx = ts.reciprocal(ts.cos(x))
-          secx2 = ts.square(secx)
-          grad * secx2
         when :negate
           -grad
         when :exp
           grad * node
         when :identity, :print
           grad
-        when :sign
-          ts.zeros(ts.shape(x), dtype: x.data_type)
         when :tile
           input_shape = ts.shape(x)
           split_shape = ts.reshape(ts.transpose(ts.stack([y, input_shape])), [-1])
@@ -216,9 +169,6 @@ module TensorStream
         when :zeros_like
           # non differentiable
           nil
-        when :argmin, :argmax, :floor_div
-          # non differentiable
-          [nil, nil]
         when :transpose
           return [ts.transpose(grad, ts.invert_permutation(y)), nil]
         when :index
