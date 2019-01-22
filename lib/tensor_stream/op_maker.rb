@@ -2,7 +2,7 @@ class TensorStream::OpMaker
   attr_reader :operation, :description, :parameters,
               :options, :gradient, :check_types,
               :supports_broadcast, :data_type_coercion,
-              :aliases, :custom
+              :aliases, :custom, :infer_type_proc
 
   def initialize(op)
     @operation = op
@@ -14,6 +14,12 @@ class TensorStream::OpMaker
     @description = []
     @aliases = []
     @custom = []
+    @infer_type_proc = lambda { |tensor|
+      next nil if tensor.inputs[0].nil?
+      next tensor.inputs[0].shape.shape if tensor.inputs.size == 1
+
+      TensorShape.infer_shape(tensor.inputs[0].shape.shape, tensor.inputs[1].shape.shape) if tensor.inputs.size == 2 && tensor.inputs[0] && tensor.inputs[1]
+    }
   end
 
   def other_names(aliases)
@@ -43,6 +49,12 @@ class TensorStream::OpMaker
     raise "No derivative op defined for #{node.operation}" if @ops[node.operation].nil? || @ops[node.operation].gradient.nil?
 
     context_caller.instance_exec(grad, node, node.inputs, &@ops[node.operation].gradient)
+  end
+
+  def self.infer_shape(context_caller, tensor)
+    raise "no OpDef for #{tensor.operation}" unless @ops[tensor.operation]
+
+    context_caller.instance_exec(tensor, &@ops[tensor.operation].infer_type_proc)
   end
 
   def self.each_op(&block)
