@@ -81,8 +81,6 @@ module TensorStream
             inv = ts.reciprocal(ts.add(one, x2))
             grad * inv
           end
-        when :fill
-          [nil, ts.reduce_sum(grad)]
         when :mod
           sx = ts.shape(x)
           sy = ts.shape(y)

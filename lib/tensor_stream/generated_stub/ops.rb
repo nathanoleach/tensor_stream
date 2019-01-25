@@ -115,6 +115,25 @@ module TensorStream
 
 
     ##
+    # This operation creates a tensor of shape dims and fills it with value.
+    #
+    #
+    # Params:
+    # +dims+:: tensor shape
+    # +value+:: scalar value to fill with
+    #
+    # Options:
+    # +:name+:: Optional name
+    def fill(dims, value, name: nil)
+
+
+
+      _op(:fill, dims, value, name: name)
+    end
+
+
+
+    ##
     # Returns element-wise integer divistion.
     #
     # This operation supports broadcasting
@@ -334,6 +353,47 @@ module TensorStream
 
 
     alias_method :reduce_prod, :prod
+
+    ##
+    # Returns the rank of a tensor
+    #
+    #
+    # Params:
+    # +input+:: A tensor
+    #
+    # Options:
+    # +:name+:: Optional name
+    def rank(input, name: nil)
+
+
+
+      input = convert_to_tensor(input)
+      return cons(input.shape.ndims) if input.shape.known?
+      _op(:rank, input, name: name)
+    end
+
+
+
+    ##
+    # This operation returns a 1-D integer tensor representing the shape of input
+    #
+    #
+    # Params:
+    # +input+:: A tensor
+    #
+    # Options:
+    # +:name+:: Optional name
+    # +:out_type+:: Optional output type default (int32)
+    def shape(input, name: nil, out_type: int32)
+
+
+
+      return constant(shape_eval(input, out_type), dtype: out_type, name: "Shape/#{name}") if input.is_a?(Array) && !input[0].is_a?(Tensor)
+      return constant(input.shape.shape, dtype: out_type, name: "Shape/#{input.name}_c") if shape_full_specified(input)
+      _op(:shape, input, name: name, out_type: out_type)
+    end
+
+
 
     ##
     # Computes sin of input element-wise.

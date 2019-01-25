@@ -100,14 +100,6 @@ module TensorStream
       _op(:expand_dims, input, axis, name: name)
     end
 
-    ##
-    # This operation returns a 1-D integer tensor representing the shape of input
-    def shape(input, name: nil, out_type: :int32)
-      return constant(shape_eval(input, out_type), dtype: out_type, name: "Shape/#{name}") if input.is_a?(Array) && !input[0].is_a?(Tensor)
-      return constant(input.shape.shape, dtype: out_type, name: "Shape/#{input.name}_c") if shape_full_specified(input)
-
-      _op(:shape, input, name: name, out_type: out_type)
-    end
 
     def shape_n(inputs, name: nil, out_type: :int32)
       shapes_known = true
@@ -136,19 +128,6 @@ module TensorStream
     # and the values of input are replicated multiples[i] times along the 'i'th dimension. For example, tiling [a b c d] by [2] produces [a b c d a b c d].
     def tile(input, multiples, name: nil)
       _op(:tile, input, multiples, name: name)
-    end
-
-    ##
-    # Returns the rank of a tensor.
-    def rank(input, name: nil)
-      input = convert_to_tensor(input)
-      return cons(input.shape.ndims) if input.shape.known?
-
-      _op(:rank, input, name: name)
-    end
-
-    def constant_initializer(value, dtype: nil, verify_shape: false)
-      TensorStream::Initializer.new(-> { _op(:fill, nil, convert_to_tensor(value, dtype: dtype)) })
     end
 
     ##
@@ -535,19 +514,6 @@ module TensorStream
     def exp(input, name: nil)
       check_allowed_types(input, FLOATING_POINT_TYPES)
       _op(:exp, input, name: name)
-    end
-
-    ##
-    # Creates a tensor filled with a scalar value.
-    #
-    # This operation creates a tensor of shape dims and fills it with value.
-    #
-    # For example:
-    # Output tensor has shape [2, 3].
-    # fill([2, 3], 9) => [[9, 9, 9]
-    #                    [9, 9, 9]]
-    def fill(dims, value, name: nil)
-      _op(:fill, dims, value, name: name)
     end
 
     ##

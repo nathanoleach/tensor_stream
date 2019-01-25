@@ -33,4 +33,28 @@ TensorStream::OpMaker.define_operation :mat_mul do |op|
 
     [grad_a, grad_b]
   end
+
+  op.define_shape do |tensor|
+    next nil if tensor.inputs[0].shape.shape.nil? || tensor.inputs[1].shape.shape.nil?
+    next [] if tensor.inputs[0].shape.shape.empty? || tensor.inputs[1].shape.shape.empty?
+    next nil if tensor.inputs[0].shape.shape.size != 2 || tensor.inputs[1].shape.shape.size != 2
+
+    shape1, m = if tensor.options[:transpose_a]
+      [tensor.inputs[0].shape.shape[0], tensor.inputs[0].shape.shape[1]]
+    else
+      [tensor.inputs[0].shape.shape[1], tensor.inputs[0].shape.shape[0]]
+    end
+
+    shape2, n = if tensor.options[:transpose_b]
+      [tensor.inputs[1].shape.shape[1], tensor.inputs[1].shape.shape[0]]
+    else
+      [tensor.inputs[1].shape.shape[0], tensor.inputs[1].shape.shape[1]]
+    end
+
+    next nil if shape1.nil? || shape2.nil? || shape1 < 0 || shape2 < 0
+
+    raise TensorStream::ValueError, "incompatible shape sizes for matrix multiplication (#{shape1} != #{shape2}) #{tensor.inputs[0].shape.shape} vs #{tensor.inputs[1].shape.shape}" if shape1 != shape2
+
+    [m, n]
+  end
 end

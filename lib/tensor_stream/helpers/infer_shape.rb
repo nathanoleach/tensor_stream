@@ -8,7 +8,27 @@ module TensorStream
     extend TensorStream::OpHelper
 
     def self.infer_shape(tensor)
-      TensorStream::OpMaker.infer_shape(self, tensor)
+      case tensor.operation
+      when :assign
+        possible_shape = if tensor.inputs[0]&.shape&.shape
+          tensor.inputs[0].shape.shape
+        else
+          tensor.inputs[1].shape.shape
+        end
+
+        possible_shape
+      when :const
+        shape_eval(tensor.options[:value])
+      when :variable_v2
+        tensor.shape ? tensor.shape.shape : nil
+      when :placeholder
+        return nil if tensor.inputs[0].nil?
+        return tensor.inputs[0].shape.shape if tensor.inputs.size == 1
+
+        TensorShape.infer_shape(tensor.inputs[0].shape.shape, tensor.inputs[1].shape.shape) if tensor.inputs.size == 2 && tensor.inputs[0] && tensor.inputs[1]
+      else
+        TensorStream::OpMaker.infer_shape(self, tensor)
+      end
       # case tensor.operation
       # when :case, :case_grad
       #   tensor.inputs[2]&.shape&.shape

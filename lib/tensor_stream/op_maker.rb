@@ -18,7 +18,7 @@ class TensorStream::OpMaker
       next nil if tensor.inputs[0].nil?
       next tensor.inputs[0].shape.shape if tensor.inputs.size == 1
 
-      TensorShape.infer_shape(tensor.inputs[0].shape.shape, tensor.inputs[1].shape.shape) if tensor.inputs.size == 2 && tensor.inputs[0] && tensor.inputs[1]
+      TensorStream::TensorShape.infer_shape(tensor.inputs[0].shape.shape, tensor.inputs[1].shape.shape) if tensor.inputs.size == 2 && tensor.inputs[0] && tensor.inputs[1]
     }
   end
 
@@ -89,6 +89,10 @@ class TensorStream::OpMaker
 
   def define_gradient(&block)
     @gradient = block
+  end
+
+  def define_shape(&block)
+    @infer_type_proc = block
   end
 
   def expand_params(print_defaults)
