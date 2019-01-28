@@ -12,7 +12,7 @@ TensorStream::OpMaker.define_operation :fill do |op|
 
   op.define_shape do |tensor|
     a_shape = tensor.inputs[0] ? tensor.inputs[0].const_value : tensor.options[:shape]
-    return nil if a_shape.nil?
+    next nil if a_shape.nil?
 
     a_shape.is_a?(Array) ? a_shape : [a_shape]
   end

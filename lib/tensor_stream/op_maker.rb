@@ -2,7 +2,7 @@ class TensorStream::OpMaker
   attr_reader :operation, :description, :parameters,
               :options, :gradient, :check_types,
               :supports_broadcast, :data_type_coercion,
-              :aliases, :custom, :infer_type_proc
+              :aliases, :custom, :infer_type_proc, :exclude
 
   def initialize(op)
     @operation = op
@@ -11,6 +11,7 @@ class TensorStream::OpMaker
     @gradient = nil
     @supports_broadcast = false
     @data_type_coercion = false
+    @exclude = false
     @description = []
     @aliases = []
     @custom = []
@@ -58,7 +59,7 @@ class TensorStream::OpMaker
   end
 
   def self.each_op(&block)
-    @ops.values.sort_by { |op| op.operation }.each do |op|
+    @ops.values.sort_by { |op| op.operation }.reject(&:exclude).each do |op|
       block.call(op)
     end
   end
@@ -69,6 +70,10 @@ class TensorStream::OpMaker
 
   def what_it_does_code(description)
     @description << "<tt>#{description}</tt>"
+  end
+
+  def exclude!
+    @exclude = true
   end
 
   ##
@@ -83,8 +88,8 @@ class TensorStream::OpMaker
     }
   end
 
-  def option(name, description, default_value = nil)
-    @options[name] = { description: description, default_value: default_value }
+  def option(name, description, default_value = nil, options = {})
+    @options[name] = { description: description, default_value: default_value, options: options }
   end
 
   def define_gradient(&block)
@@ -137,7 +142,11 @@ class TensorStream::OpMaker
 
   def options_call
     @options.map { |k, v|
-      "#{k}: #{k}"
+      if v.dig(:options, :alias)
+        "#{v.dig(:options, :alias)}: #{k}"
+      else
+        "#{k}: #{k}"
+      end
     }
   end
 

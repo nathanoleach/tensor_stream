@@ -53,4 +53,8 @@ TensorStream::OpMaker.define_operation :prod do |op|
     out = grad * ts.transpose(y, ts.invert_permutation(perm))
     [ts.reshape(out, input_shape, name: "prod"), nil]
   end
+
+  op.define_shape do |tensor|
+    _infer_reduction_op_shape(tensor)
+  end
 end

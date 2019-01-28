@@ -81,15 +81,6 @@ module TensorStream
             inv = ts.reciprocal(ts.add(one, x2))
             grad * inv
           end
-        when :mod
-          sx = ts.shape(x)
-          sy = ts.shape(y)
-          rx, ry = _broadcast_gradient_args(sx, sy)
-          floor_xy = ts.floor_div(x, y)
-          gx = ts.reshape(ts.reduce_sum(grad, rx), sx)
-          gy = ts.reshape(ts.reduce_sum(grad * ts.negative(floor_xy), ry), sy)
-
-          [gx, gy]
         when :squared_difference
           sx = i_op(:shape, x)
           sy = i_op(:shape, y)
@@ -116,8 +107,6 @@ module TensorStream
           input_grad = ts.reduce_sum(ts.reshape(grad, split_shape), axes)
 
           [input_grad, nil]
-        when :sum
-          _sum_grad(x, y, grad)
         when :reciprocal
           -grad * (ts.constant(1, dtype: x.dtype) / x**2)
         when :sqrt
@@ -131,14 +120,6 @@ module TensorStream
           x_mask = i_op(:where, x, i_op(:ones_like, y), i_op(:zeros_like, z))
           y_mask = i_op(:where, x, i_op(:zeros_like, y), i_op(:ones_like, z))
           [nil, x_mask * grad, y_mask * grad]
-        when :case
-          n_preds = node.inputs.size - 2
-
-          case_grads = Array.new(n_preds) { |index|
-            i_op(:case_grad, index, node.inputs[0], node.inputs[2 + index], grad)
-          }
-
-          [nil, i_op(:case_grad, -1, node.inputs[0], node.inputs[1], grad)] + case_grads
         when :mean
           sum_grad = _sum_grad(x, y, grad)[0]
           input_shape = ts.shape(x)
@@ -184,12 +165,8 @@ module TensorStream
           end
         when :squeeze
           _reshape_to_input(node, grad)
-        when :expand_dims
-          [_reshape_to_input(node, grad), nil]
         when :concat
           _concat_grad_helper(node, grad, 1, node.inputs.size, 0)
-        when :reshape
-          [ts.reshape(grad, ts.shape(node.inputs[0])), nil]
         when :stack
           res = ts.unstack(grad, num: node.inputs.size, axis: node.options[:axis])
           Array.new(node.inputs.size) { |i| res[i] }
@@ -197,16 +174,6 @@ module TensorStream
           ts.stack(grad, axis: node.options[:axis])
         when :conv2d
           _Conv2DGrad(node, grad)
-        when :cast
-          t = %i[float16 float32 float64]
-          src_type = node.inputs[0].data_type
-          dst_type = grad.data_type
-
-          if t.key?(src_type) && t.key?(dst_type)
-            ts.cast(grad, src_type)
-          end
-
-          nil
         else
           TensorStream::OpMaker.gradient_op(self, node, grad)
         end

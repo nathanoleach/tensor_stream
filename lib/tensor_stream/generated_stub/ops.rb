@@ -115,6 +115,47 @@ module TensorStream
 
 
     ##
+    # Returns the truth value of (x == y) element-wise.
+    #
+    # This operation supports broadcasting
+    #
+    # Params:
+    # +input_a+:: tensor X
+    # +input_b+:: tensor Y
+    #
+    # Options:
+    # +:name+:: Optional name
+    def equal(input_a, input_b, name: nil)
+
+      input_a, input_b = apply_data_type_coercion(input_a, input_b)
+
+      _op(:equal, input_a, input_b, name: name)
+    end
+
+
+
+    ##
+    # Inserts a dimension of 1 into a tensor's shape. 
+    # Given a tensor input, this operation inserts a dimension of 1 at the dimension index axis of input's shape. The 
+    # dimension index axis starts at zero; if you specify a negative number for axis it is counted backward from the end.
+    #
+    #
+    # Params:
+    # +input+:: A tensor
+    # +axis+:: Specifies the dimension index at which to expand the shape of input. Must be in the range [-rank(input) - 1, rank(input)].
+    #
+    # Options:
+    # +:name+:: Optional name
+    def expand_dims(input, axis, name: nil)
+
+
+
+      _op(:expand_dims, input, axis, name: name)
+    end
+
+
+
+    ##
     # This operation creates a tensor of shape dims and fills it with value.
     #
     #
@@ -285,6 +326,26 @@ module TensorStream
 
 
     ##
+    # Returns element-wise remainder of division.
+    #
+    # This operation supports broadcasting
+    #
+    # Params:
+    # +input_a+:: tensor X
+    # +input_b+:: tensor Y
+    #
+    # Options:
+    # +:name+:: Optional name
+    def mod(input_a, input_b, name: nil)
+
+      input_a, input_b = apply_data_type_coercion(input_a, input_b)
+
+      _op(:mod, input_a, input_b, name: name)
+    end
+
+
+
+    ##
     # Returns x * y element-wise.
     #
     # This operation supports broadcasting
@@ -300,6 +361,28 @@ module TensorStream
       input_a, input_b = apply_data_type_coercion(input_a, input_b)
 
       _op(:mul, input_a, input_b, name: name)
+    end
+
+
+
+    ##
+    # Creates a tensor with all elements set to 1.
+    # Given a single tensor (tensor), this operation returns a
+    # tensor of the same type and shape as tensor with all elements set to 1.
+    # Optionally, you can specify a new type (dtype) for the returned tensor.
+    #
+    #
+    # Params:
+    # +input+:: A tensor
+    #
+    # Options:
+    # +:dtype+:: Optional new data type to cast into
+    # +:name+:: Optional name
+    def ones_like(input, dtype: nil, name: nil)
+
+
+
+      _op(:ones_like, input, data_type: dtype, name: name)
     end
 
 
@@ -355,6 +438,29 @@ module TensorStream
     alias_method :reduce_prod, :prod
 
     ##
+    # Creates a sequence of numbers.
+    # Creates a sequence of numbers that begins at start and extends by increments of delta up to but not including limit.
+    #
+    #
+    # Params:
+    # +start+:: Acts as first entry in the range if limit is not nil; otherwise, acts as range limit and first entry defaults to 0.
+    # +limit+:: Upper limit of sequence, exclusive. If nil, defaults to the value of start while the first entry of the range defaults to 0.
+    # +delta+:: Number that increments start. Defaults to 1.
+    #
+    # Options:
+    # +:name+::  A name for the operation. Defaults to "range". default ("range")
+    # +:dtype+:: The type of the elements of the resulting tensor.
+    # +:output_type+:: Output data type defaults to int32 default (:int32)
+    def range(start = 0, limit = 0, delta = 1, name: "range", dtype: nil, output_type: :int32)
+
+
+
+      _op(:range, start, limit, delta, name: name, dtype: dtype, output_type: output_type)
+    end
+
+
+
+    ##
     # Returns the rank of a tensor
     #
     #
@@ -375,6 +481,26 @@ module TensorStream
 
 
     ##
+    # Reshapes a tensor.
+    # Given tensor, this operation returns a tensor that has the same values as tensor with shape shape.
+    #
+    #
+    # Params:
+    # +input+:: A tensor
+    # +shape+:: A new tensor shape
+    #
+    # Options:
+    # +:name+:: Optional name
+    def reshape(input, shape, name: nil)
+
+
+
+      _op(:reshape, input, shape, name: name)
+    end
+
+
+
+    ##
     # This operation returns a 1-D integer tensor representing the shape of input
     #
     #
@@ -383,8 +509,8 @@ module TensorStream
     #
     # Options:
     # +:name+:: Optional name
-    # +:out_type+:: Optional output type default (int32)
-    def shape(input, name: nil, out_type: int32)
+    # +:out_type+:: Optional output type default (:int32)
+    def shape(input, name: nil, out_type: :int32)
 
 
 
@@ -436,6 +562,26 @@ module TensorStream
 
 
     ##
+    # Returns the size of a tensor.
+    # Returns a 0-D Tensor representing the number of elements in input of type out_type. Defaults to :int32.
+    #
+    #
+    # Params:
+    # +input+:: A tensor
+    #
+    # Options:
+    # +:name+:: Optional name
+    # +:out_type+:: Optional output type default (:int32)
+    def size(input, name: nil, out_type: :int32)
+
+
+
+      _op(:size, input, name: name, out_type: out_type)
+    end
+
+
+
+    ##
     # Returns x - y element-wise.
     #
     # This operation supports broadcasting
@@ -455,6 +601,36 @@ module TensorStream
 
 
     alias_method :subtract, :sub
+
+    ##
+    # Computes the sum of elements across dimensions of a tensor.
+    # Reduces input_tensor along the dimensions given in axis. Unless keepdims is true, the rank of the
+    # tensor is reduced by 1 for each entry in axis. If keepdims is true, the reduced dimensions are
+    # retained with length 1.
+    # If axis has no entries, all dimensions are reduced, and a tensor with a single element is returned.
+    #
+    #
+    # Params:
+    # +input_a+:: tensor X
+    # +axis+:: tensor X (of type INTEGER_TYPES)
+    #
+    # Options:
+    # +:name+:: Optional name
+    # +:keepdims+:: If true, retains reduced dimensions with length 1. default (false)
+    def sum(input_a, axis = nil, name: nil, keepdims: false)
+
+      check_allowed_types(axis, TensorStream::Ops::INTEGER_TYPES)
+
+
+
+      input_a = TensorStream.convert_to_tensor(input_a)
+      return input_a if input_a.shape.scalar?
+      axis = cast_axis(input_a, axis)
+      _op(:sum, input_a, axis, name: name, keepdims: keepdims)
+    end
+
+
+    alias_method :reduce_sum, :sum
 
     ##
     # Computes tan of input element-wise.
@@ -492,6 +668,28 @@ module TensorStream
 
 
       _op(:tanh, input_a, name: name)
+    end
+
+
+
+    ##
+    # Constructs a tensor by tiling a given tensor.
+    # This operation creates a new tensor by replicating input multiples times.
+    # The output tensor's i'th dimension has input.dims(i) * multiples[i] elements,
+    # and the values of input are replicated multiples[i] times along the 'i'th dimension. For example, tiling [a b c d] by [2] produces [a b c d a b c d].
+    #
+    #
+    # Params:
+    # +input+:: A tensor
+    # +multiples+:: Must be one of the following types: int32, int64. 1-D. Length must be the same as the number of dimensions in input
+    #
+    # Options:
+    # +:name+:: Optional name
+    def tile(input, multiples, name: nil)
+
+
+
+      _op(:tile, input, multiples, name: name)
     end
 
 

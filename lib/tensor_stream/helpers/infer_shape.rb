@@ -87,16 +87,6 @@ module TensorStream
       #     end
       #     item
       #   }.compact
-      # when :reshape
-      #   new_shape = tensor.inputs[1]&.const_value ? tensor.inputs[1].const_value : nil
-      #   return nil if new_shape.nil?
-      #   return nil if tensor.inputs[0].shape.nil?
-
-      #   input_shape = tensor.inputs[0].shape.shape
-      #   return new_shape if input_shape.nil? && !new_shape.include?(-1) && !new_shape.include?(nil)
-      #   return nil if input_shape.nil? || input_shape.include?(nil)
-
-      #   TensorShape.fix_inferred_elements(new_shape, input_shape.reduce(:*))
       # when :flow_group
       #   []
       # when :zeros, :ones, :fill, :random_standard_normal, :random_uniform, :truncated_normal
@@ -115,28 +105,6 @@ module TensorStream
       #   size = tensor.inputs[0].shape.shape.reduce(:*) || 1
       #   dummy_tensor_for_shape = TensorShape.reshape(Array.new(size), tensor.inputs[0].shape)
       #   shape_eval(arr_pad(dummy_tensor_for_shape, tensor.inputs[1].const_value))
-      # when :mat_mul
-      #   return nil if tensor.inputs[0].shape.shape.nil? || tensor.inputs[1].shape.shape.nil?
-      #   return [] if tensor.inputs[0].shape.shape.empty? || tensor.inputs[1].shape.shape.empty?
-      #   return nil if tensor.inputs[0].shape.shape.size != 2 || tensor.inputs[1].shape.shape.size != 2
-
-      #   shape1, m = if tensor.options[:transpose_a]
-      #     [tensor.inputs[0].shape.shape[0], tensor.inputs[0].shape.shape[1]]
-      #   else
-      #     [tensor.inputs[0].shape.shape[1], tensor.inputs[0].shape.shape[0]]
-      #   end
-
-      #   shape2, n = if tensor.options[:transpose_b]
-      #     [tensor.inputs[1].shape.shape[1], tensor.inputs[1].shape.shape[0]]
-      #   else
-      #     [tensor.inputs[1].shape.shape[0], tensor.inputs[1].shape.shape[1]]
-      #   end
-
-      #   return nil if shape1.nil? || shape2.nil? || shape1 < 0 || shape2 < 0
-
-      #   raise TensorStream::ValueError, "incompatible shape sizes for matrix multiplication (#{shape1} != #{shape2}) #{tensor.inputs[0].shape.shape} vs #{tensor.inputs[1].shape.shape}" if shape1 != shape2
-
-      #   [m, n]
       # when :transpose
       #   return nil unless shape_full_specified(tensor.inputs[0])
       #   return nil if tensor.inputs[1].is_a?(Tensor)
@@ -173,10 +141,6 @@ module TensorStream
       #   new_shape
       # when :slice, :squeeze
       #   nil
-      # when :tile
-      #   nil
-      # when :expand_dims
-      #   nil
       # when :broadcast_gradient_args
       #   nil
       # when :no_op
@@ -189,8 +153,6 @@ module TensorStream
       #   return [tensor.inputs[0].const_value, tensor.inputs[1].const_value] if tensor.inputs[0].const_value && tensor.inputs[1].const_value
 
       #   nil
-      # when :size
-      #   []
       # when :unstack
       #   return nil unless tensor.inputs[0].shape.known?
 
@@ -232,6 +194,30 @@ module TensorStream
 
       #   TensorShape.infer_shape(tensor.inputs[0].shape.shape, tensor.inputs[1].shape.shape) if tensor.inputs.size == 2 && tensor.inputs[0] && tensor.inputs[1]
       # end
+    end
+
+    def self._infer_reduction_op_shape(tensor)
+      return [] if tensor.inputs[1].nil?
+      return nil if tensor.inputs[0].nil?
+      return nil unless tensor.inputs[0].shape.known?
+
+      input_shape = tensor.inputs[0].shape.shape
+      rank = input_shape.size
+
+      axis = tensor.inputs[1].const_value
+      return nil if axis.nil?
+
+      axis = [axis] unless axis.is_a?(Array)
+      axis = axis.map { |a| a < 0 ? rank - a.abs : a }
+
+      input_shape.each_with_index.map { |item, index|
+        if axis.include?(index)
+          next 1 if tensor.options[:keepdims]
+
+          next nil
+        end
+        item
+      }.compact
     end
   end
 end

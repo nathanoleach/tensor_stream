@@ -121,16 +121,6 @@ module TensorStream
     end
 
     ##
-    # Constructs a tensor by tiling a given tensor.
-    #
-    # This operation creates a new tensor by replicating input multiples times.
-    # The output tensor's i'th dimension has input.dims(i) * multiples[i] elements,
-    # and the values of input are replicated multiples[i] times along the 'i'th dimension. For example, tiling [a b c d] by [2] produces [a b c d a b c d].
-    def tile(input, multiples, name: nil)
-      _op(:tile, input, multiples, name: name)
-    end
-
-    ##
     # initializer that generates tensors initialized to 0.
     #
     def zeros_initializer(dtype: :float32)
@@ -216,19 +206,6 @@ module TensorStream
     def reduce_mean(input_tensor, axis = nil, keepdims: false, name: nil)
       reduce(:mean, input_tensor, axis, keepdims: keepdims, name: name)
     end
-
-    ##
-    # Computes the sum of elements across dimensions of a tensor.
-    #
-    # Reduces input_tensor along the dimensions given in axis. Unless keepdims is true,
-    # the rank of the tensor is reduced by 1 for each entry in axis. If keepdims is true,
-    # the reduced dimensions are retained with length 1.
-    # If axis has no entries, all dimensions are reduced, and a tensor with a single element
-    # is returned.
-    def reduce_sum(input_tensor, axis = nil, keepdims: false, name: nil)
-      reduce(:sum, input_tensor, axis, keepdims: keepdims, name: name)
-    end
-
 
     def reduce(op, input, axis = nil, keepdims: false, name: nil)
       input = TensorStream.convert_to_tensor(input)
@@ -370,21 +347,19 @@ module TensorStream
     end
 
     ##
-    # Returns element-wise remainder of division.
-    def mod(input_a, input_b, name: nil)
-      check_data_types(input_a, input_b)
-      _op(:mod, input_a, input_b, name: name)
-    end
-
-    ##
     # Returns element-wise integer divistion.
     def floor_div(input_a, input_b, name: nil)
       check_data_types(input_a, input_b)
       _op(:floor_div, input_a, input_b, name: name)
     end
 
-    def range(start, limit, delta = 1, dtype: nil, name: "range")
-      _op(:range, start, limit, delta, data_type: dtype, name: name)
+    ##
+    # Casts a tensor to a new type, if needed
+    def cast(input, dtype, name: nil)
+      input = convert_to_tensor(input)
+      return input if input.data_type == dtype
+
+      _op(:cast, input, data_type: dtype, name: name)
     end
 
     ##
@@ -397,15 +372,6 @@ module TensorStream
     # Returns the min of x and y (i.e. x < y ? x : y) element-wise.
     def minimum(input_a, input_b, name: nil)
       min(input_a, input_b, name: name)
-    end
-
-    ##
-    # Casts a tensor to a new type, if needed
-    def cast(input, dtype, name: nil)
-      input = convert_to_tensor(input)
-      return input if input.data_type == dtype
-
-      _op(:cast, input, data_type: dtype, name: name)
     end
 
     ##
@@ -426,13 +392,6 @@ module TensorStream
     # Computes numerical negative value element-wise.
     def negative(input, name: nil)
       negate(input, name: name)
-    end
-
-    ##
-    # Returns the truth value of (x == y) element-wise.
-    def equal(input_a, input_b, name: nil)
-      check_data_types(input_a, input_b)
-      _op(:equal, input_a, input_b, name: name)
     end
 
     ##
@@ -541,10 +500,6 @@ module TensorStream
     # When run, reports an InvalidArgument error if tensor has any values that are not a number (NaN) or infinity (Inf). Otherwise, passes tensor as-is.
     def check_numerics(tensor, message, name: nil)
       _op(:check_numerics, tensor, message: message, name: name)
-    end
-
-    def size(tensor, name: nil, out_type: :int32)
-      _op(:size, tensor, name: name, out_type: out_type)
     end
 
     def squared_difference(input_a, input_b, name: nil)
